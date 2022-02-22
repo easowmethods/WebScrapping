@@ -1,0 +1,145 @@
+import requests
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+import time
+import urllib3
+import re
+import pandas as pd
+ 
+#url of the page we want to scrape
+url = "https://alternativedata.org/data-providers/"
+ 
+# initiating the webdriver. Parameter includes the path of the webdriver.
+driver = webdriver.Chrome(executable_path='C:/Users/Easow/Downloads/chromedriver_win32/chromedriver.exe')
+driver.get(url)
+# hold for 10 seconds to load page and modal pop up to appear
+time.sleep(10)
+driver.execute_script("window.scrollTo(0, 200)")
+# close interimmodal popup for load more button click
+modalClose = driver.find_element_by_xpath(xpath="/html/body/div[2]/div/div/div[1]/button")
+modalClose.click()
+time.sleep(5)
+
+# check headers for page count
+headers = driver.execute_script("var req = new XMLHttpRequest();req.open('GET', document.location, false);req.send(null);return req.getAllResponseHeaders()")
+headers = headers.splitlines()
+print(headers)
+
+# Defining of the dataframe
+df = pd.DataFrame(columns=['Name', 'Link', 'Type', 'Summary'])
+
+# set page count for loadmore button press
+
+totalPages = 21
+
+#Create "load more" button object
+loadMore = driver.find_element_by_xpath(xpath="/html/body/section/div/div[2]/section[2]/a")
+
+for i in range(totalPages):
+    loadMore.click()
+    time.sleep(7)
+         
+html = driver.page_source
+ 
+# Now, simply apply bs4 to html variable
+soup = BeautifulSoup(html, "lxml")
+tableBody = soup.find('tbody', { 'class' : 'js-posts providers'})
+
+print('=================================================================')
+print('=================================================================')
+print('=================================================================')
+
+# iterate through rows and set the dataframe
+
+rows = tableBody.find_all('tr')
+for row in rows:
+    cols = row.find_all('td')
+    column_1 = cols[0]
+    column_2 = cols[1]
+   
+    anchors = column_1.find_all('a')
+    for n in anchors:
+        name = n.text
+        link = n['href']
+   
+    types = column_1.find_all('span')
+    for t in types:
+        ttype= t.text
+       
+    paras = column_2.find_all('p')
+    for s in paras:
+        summary = s.text
+   
+    df = df.append({'Name': name, 'Link': link, 'Type': ttype, 'Summary':summary}, ignore_index=True)
+
+# print the dataframe
+#with pd.option_context('display.max_rows', None,
+#                       'display.precision', 3,
+#                       ):
+#    print(df)
+
+with pd.ExcelWriter('output.xlsx', engine='xlsxwriter') as writer:  
+    df.to_excel(writer, sheet_name='AlternativeData_output')
+
+ 
+
+ 
+
+ 
+
+Reference
+
+ 
+
+ 
+
+ 
+
+#Selenium installation technique -
+
+#Run command in cmd - pip install selenium
+
+ 
+
+#ChromeDriver installation technique –
+
+ 
+
+#Install from URL - https://chromedriver.storage.googleapis.com/index.html?path=97.0.4692.71/ (I downloaded the win32 windows version). Once download double click on the exe file downloaded, chromedriver will start running on its own.
+
+ 
+
+#Use below python code to get data –
+
+ 
+
+#import requests
+#from bs4 import BeautifulSoup
+#from selenium import webdriver
+#from selenium.webdriver.common.keys import Keys
+#import time
+ 
+#url of the page we want to scrape
+#url = "https://alternativedata.org/data-providers/"
+ 
+# initiating the webdriver. Parameter includes the path of the webdriver. use your download path where the file is kept.
+driver = webdriver.Chrome(executable_path='C:/Users/Payal/Downloads/chromedriver_win32/chromedriver.exe')
+driver.get(url)
+ 
+# this is just to ensure that the page is loaded - Time is in seconds
+time.sleep(5)
+ 
+#html = driver.page_source
+ 
+# this renders the JS code and stores all
+# of the information in static HTML code.
+ 
+# Now, we could simply apply bs4 to html variable
+soup = BeautifulSoup(html, "lxml")
+
+# table = soup.find(lambda tag: tag.name=='table' and tag.has_attr('class') and tag['class']=="provider-table providers")
+# rows = table.findAll(lambda tag: tag.name=='td')
+htmltable = soup.find('table', { 'class' : 'provider-table providers' })
+tableBody = soup.find('tbody', { 'class' : 'js-posts providers'})
+print(tableBody)
